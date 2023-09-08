@@ -1,6 +1,5 @@
 package com.example.djiv5
 
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.view.SurfaceHolder
@@ -8,10 +7,12 @@ import android.view.SurfaceView
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
 import dji.sdk.keyvalue.key.BatteryKey
 import dji.sdk.keyvalue.key.CameraKey
 import dji.sdk.keyvalue.key.KeyTools
 import dji.sdk.keyvalue.value.camera.VideoRecordMode
+import dji.sdk.keyvalue.value.common.ComponentIndexType
 import dji.sdk.keyvalue.value.common.EmptyMsg
 import dji.v5.common.callback.CommonCallbacks
 import dji.v5.common.error.IDJIError
@@ -31,6 +32,10 @@ class MainActivity : AppCompatActivity(), SurfaceHolder.Callback {
     private val TAG = "SDK_TESTING_MAIN_ACTIVITY"
     private var isConnected = false
     private var videoDecoder: IVideoDecoder? = null
+
+    private val cameraIndex = ComponentIndexType.LEFT_OR_MAIN
+
+
     private var id = ""
     lateinit var tv1 : TextView
     lateinit var tv2 : TextView
@@ -63,90 +68,74 @@ class MainActivity : AppCompatActivity(), SurfaceHolder.Callback {
         KeyManager.getInstance().getValue(cameraMode,object : CommonCallbacks.CompletionCallbackWithParam<VideoRecordMode>{
             override fun onSuccess(t: VideoRecordMode?) {
                 runOnUiThread {
-                    Toast.makeText(this@MainActivity,"Video record mode connection success",Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        this@MainActivity,
+                        "Set video record mode success",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+                    val key = KeyTools.createKey(CameraKey.KeyStartRecord)
 
-                    val key = KeyTools.createKey(CameraKey.KeyConnection)
-                    KeyManager.getInstance().getValue(key,object : CommonCallbacks.CompletionCallbackWithParam<Boolean>{
-                        override fun onSuccess(t: Boolean?) {
+                    KeyManager.getInstance().performAction(key,object: CommonCallbacks.CompletionCallbackWithParam<EmptyMsg>{
+                        override fun onSuccess(t: EmptyMsg?) {
 
                             runOnUiThread {
-                                Toast.makeText(this@MainActivity,"Camera connection success",Toast.LENGTH_SHORT).show()
+                                Toast.makeText(
+                                    this@MainActivity,
+                                    "Video record started",
+                                    Toast.LENGTH_SHORT
+                                ).show()
                             }
-
-                            KeyManager.getInstance().getValue(KeyTools.createKey(CameraKey.KeyStartShootPhoto),object :CommonCallbacks.CompletionCallbackWithParam<EmptyMsg>{
-                                override fun onSuccess(t: EmptyMsg?) {
-
-                                    runOnUiThread {
-                                        Toast.makeText(this@MainActivity,"Recording started",Toast.LENGTH_SHORT).show()
-                                    }
-                                }
-
-                                override fun onFailure(error: IDJIError) {
-
-                                    runOnUiThread {
-                                        Toast.makeText(this@MainActivity,"Recording start failed ${error.toString()}",Toast.LENGTH_SHORT).show()
-                                        tv2.text =error.toString()
-                                        Log.i(TAG,error.toString())
-                                    }
-                                }
-                            })
-
                         }
 
                         override fun onFailure(error: IDJIError) {
+
                             runOnUiThread {
-                                Toast.makeText(this@MainActivity,"Camera connection failed ${error.description()}",Toast.LENGTH_SHORT).show()
+                                Toast.makeText(
+                                    this@MainActivity,
+                                    "Video record start failed",
+                                    Toast.LENGTH_SHORT
+                                ).show()
                             }
+                            tv2.text = error.toString()
                         }
                     })
 
-                }
             }
-
             override fun onFailure(error: IDJIError) {
-                TODO("Not yet implemented")
             }
         })
-
-
     }
 
     private fun stopRecordingVideo() {
-        val key = KeyTools.createKey(CameraKey.KeyConnection)
-        KeyManager.getInstance().getValue(key,object : CommonCallbacks.CompletionCallbackWithParam<Boolean>{
-            override fun onSuccess(t: Boolean?) {
+
+        val key = KeyTools.createKey(CameraKey.KeyStopRecord)
+
+        KeyManager.getInstance().performAction(key,object: CommonCallbacks.CompletionCallbackWithParam<EmptyMsg>{
+            override fun onSuccess(t: EmptyMsg?) {
 
                 runOnUiThread {
-                    Toast.makeText(this@MainActivity,"Camera connection success",Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        this@MainActivity,
+                        "Video record stopped",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
-
-                KeyManager.getInstance().getValue(KeyTools.createKey(CameraKey.KeyStopRecord),object :CommonCallbacks.CompletionCallbackWithParam<EmptyMsg>{
-                    override fun onSuccess(t: EmptyMsg?) {
-
-                        runOnUiThread {
-                            Toast.makeText(this@MainActivity,"Recording stopped",Toast.LENGTH_SHORT).show()
-                        }
-                    }
-
-                    override fun onFailure(error: IDJIError) {
-
-                        runOnUiThread {
-                            Toast.makeText(this@MainActivity,"Recording stop failed ${error.description()}",Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                })
-
             }
 
             override fun onFailure(error: IDJIError) {
+
                 runOnUiThread {
-                    Toast.makeText(this@MainActivity,"Camera connection failed ${error.description()}",Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        this@MainActivity,
+                        "Video record stop failed",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
             }
         })
 
     }
-
 
     private fun registerApp()
     {
