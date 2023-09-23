@@ -17,6 +17,15 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
+        android:id="@+id/tv3"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="TextView"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/takeoff_btn" />
+
+    <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:id="@+id/tv2"
@@ -24,6 +33,15 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tv1" />
+
+    <Button
+        android:id="@+id/takeoff_btn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Takeoff down"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/tv2" />
 
     <SurfaceView
         android:id="@+id/live_stream_surface_views"
@@ -43,6 +61,16 @@
         app:layout_constraintTop_toBottomOf="@+id/live_stream_surface_views" />
 
     <Button
+        android:id="@+id/gimble_up"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Gimble up"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/gimble_down"
+        app:layout_constraintTop_toBottomOf="@+id/btn_start_record" />
+
+    <Button
         android:id="@+id/btn_stop_record"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -51,5 +79,15 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/btn_start_record"
         app:layout_constraintTop_toBottomOf="@+id/live_stream_surface_views" />
+
+    <Button
+        android:id="@+id/gimble_down"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Gimble down"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/btn_start_record"
+        app:layout_constraintTop_toBottomOf="@+id/btn_stop_record" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -8,12 +8,22 @@ import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.Observer
 import dji.sdk.keyvalue.key.BatteryKey
 import dji.sdk.keyvalue.key.CameraKey
+import dji.sdk.keyvalue.key.FlightControllerKey
+import dji.sdk.keyvalue.key.GimbalKey
 import dji.sdk.keyvalue.key.KeyTools
+import dji.sdk.keyvalue.value.camera.GeneratedMediaFileInfo
 import dji.sdk.keyvalue.value.camera.VideoRecordMode
 import dji.sdk.keyvalue.value.common.ComponentIndexType
 import dji.sdk.keyvalue.value.common.EmptyMsg
+import dji.sdk.keyvalue.value.gimbal.CtrlInfo
+import dji.sdk.keyvalue.value.gimbal.GimbalAngleRotation
+import dji.sdk.keyvalue.value.gimbal.GimbalAngleRotationMode
+import dji.sdk.keyvalue.value.gimbal.GimbalSpeedRotation
+import dji.sdk.keyvalue.value.media.MediaFile
 import dji.v5.common.callback.CommonCallbacks
 import dji.v5.common.error.IDJIError
 import dji.v5.common.register.DJISDKInitEvent
@@ -32,19 +42,22 @@ class MainActivity : AppCompatActivity(), SurfaceHolder.Callback {
     private val TAG = "SDK_TESTING_MAIN_ACTIVITY"
     private var isConnected = false
     private var videoDecoder: IVideoDecoder? = null
-
-    private val cameraIndex = ComponentIndexType.LEFT_OR_MAIN
-
-
+    private var keyManager = KeyManager.getInstance()
+    var GIMBLE_PITCH = 2.0 // change gimbal pitch
     private var id = ""
     lateinit var tv1 : TextView
     lateinit var tv2 : TextView
+    lateinit var tv3 : TextView
     lateinit var startRecordingButton : Button
     lateinit var stopRecordingButton : Button
+    lateinit var takeOffButton : Button
+    lateinit var gimbleUp : Button
+    lateinit var gimbleDown : Button
     private lateinit var surfaceView: SurfaceView
     private val streamManager: ILiveStreamManager = MediaDataCenter.getInstance().liveStreamManager
     var curWidth: Int = -1
     var curHeight: Int = -1
+    private var newFile = MutableLiveData<GeneratedMediaFileInfo>()
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -52,13 +65,132 @@ class MainActivity : AppCompatActivity(), SurfaceHolder.Callback {
         setContentView(R.layout.activity_main)
         tv1 = findViewById(R.id.tv1)
         tv2 = findViewById(R.id.tv2)
+        tv3 = findViewById(R.id.tv3)
+        gimbleUp = findViewById(R.id.gimble_up)
+        gimbleDown = findViewById(R.id.gimble_down)
         startRecordingButton = findViewById(R.id.btn_start_record)
         stopRecordingButton = findViewById(R.id.btn_stop_record)
+        takeOffButton = findViewById(R.id.takeoff_btn)
         registerApp()
 
         startRecordingButton.setOnClickListener { startRecordingVideo() }
         stopRecordingButton.setOnClickListener { stopRecordingVideo() }
+        gimbleUp.setOnClickListener { moveGimbalUp() }
+        gimbleDown.setOnClickListener { moveGimbalDown() }
+        takeOffButton.setOnClickListener {
+//            droneTakeOff()
+        }
 
+        newFile.observe(this, Observer{
+            handleNewFile(it)
+        })
+    }
+
+    private fun droneTakeOff() {
+        KeyManager.getInstance().getValue(KeyTools.createKey(FlightControllerKey.KeyConnection),object : CommonCallbacks.CompletionCallbackWithParam<Boolean>{
+            override fun onSuccess(t: Boolean?) {
+
+                KeyManager.getInstance().performAction(KeyTools.createKey(FlightControllerKey.KeyStartTakeoff),object : CommonCallbacks.CompletionCallbackWithParam<EmptyMsg>{
+                    override fun onSuccess(t: EmptyMsg?) {
+                        runOnUiThread {
+                            Toast.makeText(this@MainActivity,"Take off success" , Toast.LENGTH_SHORT).show()
+                        }
+                    }
+
+                    override fun onFailure(error: IDJIError) {
+                        runOnUiThread {
+                            Toast.makeText(this@MainActivity,"Take off fail" , Toast.LENGTH_SHORT).show()
+                            tv2.text = error.toString()
+                        }
+                    }
+                })
+
+
+            }
+
+            override fun onFailure(error: IDJIError) {
+
+                runOnUiThread {
+                    Toast.makeText(this@MainActivity,"FlightController failed to connect",Toast.LENGTH_SHORT).show()
+                }
+
+            }
+        })
+
+    }
+
+    private fun moveGimbalDown() {
+        val key = KeyTools.createKey(GimbalKey.KeyConnection)
+        KeyManager.getInstance().getValue(key,object : CommonCallbacks.CompletionCallbackWithParam<Boolean>{
+            override fun onSuccess(t: Boolean?) {
+
+                runOnUiThread{
+                    Toast.makeText(this@MainActivity,"Gimbal Connection success",Toast.LENGTH_SHORT).show()
+                }
+
+                val gimbalKey= KeyTools.createKey(GimbalKey.KeyRotateBySpeed)
+
+                KeyManager.getInstance().performAction(gimbalKey, GimbalSpeedRotation(GIMBLE_PITCH,0.0,0.0, CtrlInfo()),
+                    object : CommonCallbacks.CompletionCallbackWithParam<EmptyMsg>{
+                    override fun onSuccess(t: EmptyMsg?) {
+                        runOnUiThread{
+                            Toast.makeText(this@MainActivity,"Gimbal rotation success",Toast.LENGTH_SHORT).show()
+                        }
+                    }
+
+                    override fun onFailure(error: IDJIError) {
+                        runOnUiThread{
+                            Toast.makeText(this@MainActivity,"Gimbal rotation failed",Toast.LENGTH_SHORT).show()
+                        }
+                        tv2.text = error.toString()
+                    }
+                })
+
+
+            }
+
+            override fun onFailure(error: IDJIError) {
+
+            }
+        })
+
+    }
+
+    private fun moveGimbalUp() {
+        val key = KeyTools.createKey(GimbalKey.KeyConnection)
+        KeyManager.getInstance().getValue(key,object : CommonCallbacks.CompletionCallbackWithParam<Boolean>{
+            override fun onSuccess(t: Boolean?) {
+
+                runOnUiThread{
+                    Toast.makeText(this@MainActivity,"Gimbal Connection success",Toast.LENGTH_SHORT).show()
+                }
+
+                val gimbalKey= KeyTools.createKey(GimbalKey.KeyRotateBySpeed)
+
+
+                KeyManager.getInstance().performAction(gimbalKey, GimbalSpeedRotation(-GIMBLE_PITCH,0.0,0.0, CtrlInfo()),
+                    object : CommonCallbacks.CompletionCallbackWithParam<EmptyMsg>{
+                        override fun onSuccess(t: EmptyMsg?) {
+                            runOnUiThread{
+                                Toast.makeText(this@MainActivity,"Gimbal rotation success",Toast.LENGTH_SHORT).show()
+                            }
+                        }
+
+                        override fun onFailure(error: IDJIError) {
+                            runOnUiThread{
+                                Toast.makeText(this@MainActivity,"Gimbal rotation failed",Toast.LENGTH_SHORT).show()
+                            }
+                            tv2.text = error.toString()
+                        }
+                    })
+
+
+            }
+
+            override fun onFailure(error: IDJIError) {
+
+            }
+        })
 
     }
 
@@ -163,8 +295,9 @@ class MainActivity : AppCompatActivity(), SurfaceHolder.Callback {
             override fun onProductConnect(productId: Int)
             {
 
-                initialisedDroneComponents()
+                initialiseDroneComponent()
                 initView()
+
                 isConnected = true
                 id = productId.toString()
                 Log.i(TAG, "onProductConnect: ")
@@ -178,15 +311,10 @@ class MainActivity : AppCompatActivity(), SurfaceHolder.Callback {
                             runOnUiThread{
                                 Toast.makeText(this@MainActivity,"battery connection success",Toast.LENGTH_SHORT).show()
                             }
-
-                            KeyManager.getInstance().getValue(KeyTools.createKey(BatteryKey.KeyChargeRemainingInPercent),object : CommonCallbacks.CompletionCallbackWithParam<Int>{
-                                override fun onSuccess(t: Int?) {
-                                    tv1.text = t.toString()
-
+                            KeyManager.getInstance().listen(KeyTools.createKey(BatteryKey.KeyChargeRemainingInPercent),tv1,object : CommonCallbacks.KeyListener<Int>{
+                                override fun onValueChange(oldValue: Int?, newValue: Int?) {
                                 }
 
-                                override fun onFailure(error: IDJIError) {
-                                }
                             })
 
 
@@ -227,14 +355,7 @@ class MainActivity : AppCompatActivity(), SurfaceHolder.Callback {
         })
     }
 
-    private fun initialisedDroneComponents() {
 
-        val camera = KeyTools.createKey(CameraKey.KeyConnection)
-
-
-
-
-    }
 
     private fun initView() {
         surfaceView = findViewById(R.id.live_stream_surface_views)
@@ -258,6 +379,35 @@ class MainActivity : AppCompatActivity(), SurfaceHolder.Callback {
 
         curWidth = surfaceView.width
         curHeight = surfaceView.height
+    }
+
+   fun initialiseDroneComponent(){
+
+       KeyManager.getInstance().getValue(KeyTools.createKey(CameraKey.KeyConnection),object : CommonCallbacks.CompletionCallbackWithParam<Boolean>{
+           override fun onSuccess(t: Boolean?) {
+
+               val key = KeyTools.createKey(CameraKey.KeyNewlyGeneratedMediaFile)
+
+               KeyManager.getInstance().listen(KeyTools.createKey(CameraKey.KeyNewlyGeneratedMediaFile),newFile,object : CommonCallbacks.KeyListener<GeneratedMediaFileInfo>{
+                   override fun onValueChange(
+                       oldValue: GeneratedMediaFileInfo?,
+                       newValue: GeneratedMediaFileInfo?
+                   ) {
+                       newFile.postValue(newValue)
+                       runOnUiThread {
+                           Toast.makeText(this@MainActivity,"File created" , Toast.LENGTH_SHORT).show()
+                       }
+                   }
+               })
+
+
+
+           }
+
+
+           override fun onFailure(error: IDJIError) {
+           }
+       })
     }
 
 
@@ -295,6 +445,15 @@ class MainActivity : AppCompatActivity(), SurfaceHolder.Callback {
 
     private fun getVideoChannel(): VideoChannelType {
         return streamManager.videoChannelType
+    }
+
+    private fun handleNewFile(file : GeneratedMediaFileInfo){
+
+        runOnUiThread {
+            Toast.makeText(this@MainActivity,"New file ${file.fileSize}" ,Toast.LENGTH_SHORT).show()
+            tv3.text = file.toString()
+        }
+
     }
 
 }
